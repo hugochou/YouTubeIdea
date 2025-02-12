@@ -65,7 +65,6 @@ struct HistoryView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                .onDelete(perform: deleteItems)
             }
         }
         .navigationTitle("历史记录")
@@ -152,31 +151,51 @@ struct HistoryView: View {
     }
     
     private func deleteRecord(_ record: VideoRecord) {
-        withAnimation {
-            // 检查是否是当前显示的记录
-            if currentRecord?.id == record.id {
-                currentRecord = nil
-            }
-            // 如果正在查看这条记录的详情，关闭详情视图
-            if selectedRecord?.id == record.id {
-                selectedRecord = nil
+        // 获取需要的信息
+        let objectID = record.objectID
+        let tempURL = record.tempAudioURL
+        
+        // 创建后台上下文
+        let backgroundContext = PersistenceController.shared.container.newBackgroundContext()
+        
+        // 在后台上下文中执行删除
+        backgroundContext.perform {
+            // 1. 获取后台上下文中的记录
+            guard let backgroundRecord = try? backgroundContext.existingObject(with: objectID) as? VideoRecord else {
+                return
             }
             
-            // 删除临时文件
-            if let url = record.tempAudioURL {
+            // 2. 删除临时文件
+            if let url = tempURL {
                 try? FileManager.default.removeItem(at: url)
             }
             
-            // 从 CoreData 中删除记录
-            viewContext.delete(record)
-            try? viewContext.save()
-        }
-    }
-    
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { records[$0] }.forEach(viewContext.delete)
-            try? viewContext.save()
+            // 3. 删除记录
+            backgroundContext.delete(backgroundRecord)
+            
+            do {
+                // 4. 保存后台上下文
+                try backgroundContext.save()
+                
+                // 5. 在主线程更新 UI
+                Task { @MainActor in
+                    // 同步删除结果到主上下文
+                    NSManagedObjectContext.mergeChanges(
+                        fromRemoteContextSave: [NSDeletedObjectsKey: [objectID]],
+                        into: [viewContext]
+                    )
+                    
+                    // 更新 UI 状态
+                    if currentRecord?.objectID == objectID {
+                        currentRecord = nil
+                    }
+                    if selectedRecord?.objectID == objectID {
+                        selectedRecord = nil
+                    }
+                }
+            } catch {
+                print("删除失败: \(error.localizedDescription)")
+            }
         }
     }
     
