@@ -52,105 +52,50 @@ class APIService {
     func transcribeAudio(from audioURL: URL) async throws -> String {
         print("开始音频转文字，文件路径：\(audioURL.path)")
         
-        // 首先验证音频文件
-        guard FileManager.default.fileExists(atPath: audioURL.path) else {
-            print("错误：音频文件不存在")
-            throw APIError.invalidResponse("音频文件不存在")
+        // 1. 分割音频
+        let segments = try await AudioSplitter.shared.splitAudio(at: audioURL)
+        var transcriptions: [(startTime: Double, text: String)] = []
+        
+        // 2. 逐个处理片段
+        for segment in segments {
+            // 验证片段大小
+            guard segment.fileSize <= AudioSplitter.maxFileSize else {
+                throw APIError.invalidResponse("音频片段过大：\(segment.fileSize) bytes")
+            }
+            
+            let transcription = try await transcribeSegment(from: segment.url)
+            transcriptions.append((segment.startTime, transcription))
+            
+            // 清理临时文件
+            try? FileManager.default.removeItem(at: segment.url)
         }
         
-        // 检查文件大小
-        guard let fileAttributes = try? FileManager.default.attributesOfItem(atPath: audioURL.path),
-              let fileSize = fileAttributes[.size] as? NSNumber,
-              fileSize.intValue > 0 else {
-            print("错误：音频文件无效或为空")
-            throw APIError.invalidResponse("音频文件无效或为空")
+        // 3. 按时间顺序合并结果
+        return transcriptions
+            .sorted { $0.startTime < $1.startTime }
+            .map { $0.text }
+            .joined(separator: "\n")
+    }
+    
+    private func transcribeSegment(from url: URL) async throws -> String {
+        let request = try createTranscriptionRequest(for: url)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.networkError
         }
         
-        print("音频文件大小：\(fileSize.intValue) bytes")
-        
-        let url = URL(string: "\(siliconFlowURL)/audio/transcriptions")!
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(siliconFlowKey)", forHTTPHeaderField: "Authorization")
-        
-        // 创建multipart/form-data请求
-        let boundary = UUID().uuidString
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
-        var data = Data()
-        
-        do {
-            // 读取音频文件数据
-            print("开始读取音频文件数据...")
-            let audioData = try Data(contentsOf: audioURL, options: .mappedIfSafe)
-            guard !audioData.isEmpty else {
-                print("错误：无法读取音频数据")
-                throw APIError.invalidResponse("无法读取音频数据")
-            }
-            
-            print("成功读取音频数据，大小：\(audioData.count) bytes")
-            
-            // 添加文件数据
-            data.append("--\(boundary)\r\n".data(using: .utf8)!)
-            data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(audioURL.lastPathComponent)\"\r\n".data(using: .utf8)!)
-            data.append("Content-Type: audio/mpeg\r\n\r\n".data(using: .utf8)!)
-            data.append(audioData)
-            data.append("\r\n".data(using: .utf8)!)
-            
-            // 添加模型参数
-            data.append("--\(boundary)\r\n".data(using: .utf8)!)
-            data.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
-            data.append("FunAudioLLM/SenseVoiceSmall\r\n".data(using: .utf8)!)
-            
-            // 结束标记
-            data.append("--\(boundary)--\r\n".data(using: .utf8)!)
-            
-            request.httpBody = data
-            
-            print("开始发送转录请求...")
-            let (responseData, response) = try await URLSession.shared.data(for: request)
-            
-            // 验证响应状态码
-            if let httpResponse = response as? HTTPURLResponse {
-                print("服务器响应状态码：\(httpResponse.statusCode)")
-                guard (200...299).contains(httpResponse.statusCode) else {
-                    let errorMessage = String(data: responseData, encoding: .utf8) ?? "Unknown error"
-                    print("服务器错误：\(errorMessage)")
-                    throw APIError.invalidResponse("服务器错误 (\(httpResponse.statusCode)): \(errorMessage)")
-                }
-            }
-            
-            // 解析响应
-            guard !responseData.isEmpty else {
-                print("错误：服务器返回空数据")
-                throw APIError.invalidResponse("服务器返回空数据")
-            }
-            
-            print("收到响应数据，大小：\(responseData.count) bytes")
-            
-            do {
-                if let responseString = String(data: responseData, encoding: .utf8) {
-                    print("原始响应：\(responseString)")
-                }
-                
-                let response = try JSONDecoder().decode(TranscriptionResponse.self, from: responseData)
-                guard !response.text.isEmpty else {
-                    print("错误：转录结果为空")
-                    throw APIError.invalidResponse("转录结果为空")
-                }
-                
-                print("转录成功，文本长度：\(response.text.count)")
-                return response.text
-            } catch {
-                print("解码错误：\(error)")
-                throw APIError.decodingError
-            }
-        } catch let error as APIError {
-            throw error
-        } catch {
-            print("音频处理错误：\(error)")
-            throw APIError.invalidResponse("音频处理失败：\(error.localizedDescription)")
+        if httpResponse.statusCode == 413 {
+            throw APIError.invalidResponse("音频片段过大，请联系开发者")
         }
+        
+        guard (200...299).contains(httpResponse.statusCode) else {
+            try handleAPIError(data, statusCode: httpResponse.statusCode)
+            throw APIError.networkError
+        }
+        
+        let transcription = try JSONDecoder().decode(TranscriptionResponse.self, from: data)
+        return transcription.text
     }
     
     // 文字翻译
@@ -274,6 +219,41 @@ class APIService {
         } catch {
             throw APIError.invalidResponse("服务器错误 \(statusCode): \(String(data: data, encoding: .utf8) ?? "未知错误")")
         }
+    }
+    
+    // 添加创建转录请求的方法
+    private func createTranscriptionRequest(for url: URL) throws -> URLRequest {
+        let apiURL = URL(string: "\(siliconFlowURL)/audio/transcriptions")!
+        var request = URLRequest(url: apiURL)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(siliconFlowKey)", forHTTPHeaderField: "Authorization")
+        
+        // 创建 multipart/form-data 请求
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var data = Data()
+        
+        // 读取音频文件数据
+        let audioData = try Data(contentsOf: url, options: .mappedIfSafe)
+        
+        // 添加文件数据
+        data.append("--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(url.lastPathComponent)\"\r\n".data(using: .utf8)!)
+        data.append("Content-Type: audio/mpeg\r\n\r\n".data(using: .utf8)!)
+        data.append(audioData)
+        data.append("\r\n".data(using: .utf8)!)
+        
+        // 添加模型参数
+        data.append("--\(boundary)\r\n".data(using: .utf8)!)
+        data.append("Content-Disposition: form-data; name=\"model\"\r\n\r\n".data(using: .utf8)!)
+        data.append("FunAudioLLM/SenseVoiceSmall\r\n".data(using: .utf8)!)
+        
+        // 结束标记
+        data.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        request.httpBody = data
+        return request
     }
 }
 

@@ -30,6 +30,7 @@
 		83F624762D5B48FD007001D4 /* ProcessingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F624752D5B48FD007001D4 /* ProcessingSection.swift */; };
 		83F6247A2D5C77C9007001D4 /* HistoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F624792D5C77C9007001D4 /* HistoryDetailView.swift */; };
 		83F6247D2D5DA782007001D4 /* ProcessingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F6247B2D5DA782007001D4 /* ProcessingCoordinator.swift */; };
+		83F6247F2D5E21D8007001D4 /* AudioSplitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F6247E2D5E21D8007001D4 /* AudioSplitter.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,6 +70,7 @@
 		83F624752D5B48FD007001D4 /* ProcessingSection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProcessingSection.swift; sourceTree = "<group>"; };
 		83F624792D5C77C9007001D4 /* HistoryDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HistoryDetailView.swift; sourceTree = "<group>"; };
 		83F6247B2D5DA782007001D4 /* ProcessingCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProcessingCoordinator.swift; sourceTree = "<group>"; };
+		83F6247E2D5E21D8007001D4 /* AudioSplitter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioSplitter.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -146,6 +148,7 @@
 		83F624142D577DBE007001D4 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				83F6247E2D5E21D8007001D4 /* AudioSplitter.swift */,
 				83F624192D57997C007001D4 /* SettingsManager.swift */,
 				83F624172D578058007001D4 /* DownloadManager.swift */,
 				83F624132D577DBE007001D4 /* APIService.swift */,
@@ -315,6 +318,7 @@
 				83F6247D2D5DA782007001D4 /* ProcessingCoordinator.swift in Sources */,
 				83F624002D577B77007001D4 /* ContentView.swift in Sources */,
 				83F624602D5B1770007001D4 /* ProcessTypes.swift in Sources */,
+				83F6247F2D5E21D8007001D4 /* AudioSplitter.swift in Sources */,
 				83F624152D577DBE007001D4 /* VideoRecord.swift in Sources */,
 				83F6247A2D5C77C9007001D4 /* HistoryDetailView.swift in Sources */,
 				83F624262D579B4C007001D4 /* SharedViews.swift in Sources */,

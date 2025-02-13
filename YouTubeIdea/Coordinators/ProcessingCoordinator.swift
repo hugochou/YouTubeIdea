@@ -72,8 +72,6 @@ class ProcessingCoordinator: ObservableObject {
     
     // 开始新的处理流程
     func startNewProcessing(url: String) async throws {
-        print("startNewProcessing")
-        
         // 1. 创建新记录
         let record = VideoRecord.createPending(in: viewContext, url: url)
         try viewContext.save()
@@ -86,7 +84,6 @@ class ProcessingCoordinator: ObservableObject {
 
         // 2. 开始自动处理流程
         try await processRecord(record)
-
     }
     
     // 继续处理现有记录

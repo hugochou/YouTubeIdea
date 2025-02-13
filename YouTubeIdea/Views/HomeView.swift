@@ -2,7 +2,6 @@ import SwiftUI
 import CoreData
 
 struct HomeView: View {
-    @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var coordinator: ProcessingCoordinator
     @State private var videoURL = ""
     
@@ -17,7 +16,6 @@ struct HomeView: View {
     }
     
     var body: some View {
-        let _ = Self._printChanges()
         VStack(spacing: 16) {
             // URL 输入区域
             VStack(spacing: 8) {
@@ -29,7 +27,6 @@ struct HomeView: View {
                     
                     Button {
                         Task {
-                            print("按钮被点击")
                             try await coordinator.startNewProcessing(url: videoURL)
                         }
                     } label: {
@@ -104,6 +101,9 @@ struct HomeView: View {
                 Task {
                     try await coordinator.continueProcessing(record)
                 }
+            }
+            if let url = newRecord?.url {
+                videoURL = url
             }
         }
     }
