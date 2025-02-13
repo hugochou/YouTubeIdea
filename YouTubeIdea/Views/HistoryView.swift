@@ -2,7 +2,7 @@ import SwiftUI
 import CoreData
 
 struct HistoryView: View {
-    @Environment(\.managedObjectContext) private var viewContext
+    @StateObject private var coordinator: ProcessingCoordinator
     @FetchRequest(
         entity: VideoRecord.entity(),
         sortDescriptors: [NSSortDescriptor(keyPath: \VideoRecord.createdAt, ascending: false)],
@@ -15,13 +15,17 @@ struct HistoryView: View {
     @State private var recordToDelete: VideoRecord?
     @State private var showingClearAllAlert = false
     
-    // 用于切换到主页的状态
+    // 只保留切换标签页的状态
     @Binding var selectedTab: ContentView.Tab
-    @Binding var currentRecord: VideoRecord?  // 改用 currentRecord
     
     // 添加复制成功提示
     @State private var showingCopyAlert = false
     @State private var copiedURL = ""
+    
+    init(selectedTab: Binding<ContentView.Tab>) {
+        self._selectedTab = selectedTab
+        self._coordinator = StateObject(wrappedValue: ProcessingCoordinator(viewContext: PersistenceController.shared.container.viewContext))
+    }
     
     var body: some View {
         VStack {
@@ -45,25 +49,13 @@ struct HistoryView: View {
             // 记录列表
             List {
                 ForEach(filteredRecords, id: \.id) { record in
-                    HStack {
-                        RecordRow(
-                            record: record,
-                            currentRecord: $currentRecord,
-                            selectedTab: $selectedTab,
-                            selectedRecord: $selectedRecord
-                        )
-                        
-                        Spacer()
-                        
-                        // 添加删除按钮
-                        Button(role: .destructive) {
-                            deleteRecord(record)
-                        } label: {
-                            Image(systemName: "trash")
-                                .foregroundColor(.red)
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    RecordRow(
+                        record: record,
+                        onContinue: coordinator.continueProcessing,
+                        onDelete: coordinator.deleteRecord,
+                        selectedTab: $selectedTab,
+                        selectedRecord: $selectedRecord
+                    )
                 }
             }
         }
@@ -110,29 +102,9 @@ struct HistoryView: View {
     }
     
     private func clearAllRecords() {
-        // 创建一个后台上下文来处理批量删除
-        let backgroundContext = PersistenceController.shared.container.newBackgroundContext()
-        
-        backgroundContext.perform {
-            // 获取所有记录的 objectID
-            let fetchRequest: NSFetchRequest<NSFetchRequestResult> = VideoRecord.fetchRequest()
-            let batchDeleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
-            
-            // 配置批量删除请求以返回删除的对象的 ID
-            batchDeleteRequest.resultType = .resultTypeObjectIDs
-            
-            do {
-                // 执行批量删除
-                let result = try backgroundContext.execute(batchDeleteRequest) as? NSBatchDeleteResult
-                let objectIDs = result?.result as? [NSManagedObjectID] ?? []
-                
-                // 同步删除结果到主上下文
-                NSManagedObjectContext.mergeChanges(
-                    fromRemoteContextSave: [NSDeletedObjectsKey: objectIDs],
-                    into: [viewContext]
-                )
-            } catch {
-                print("清空记录失败: \(error.localizedDescription)")
+        for record in records {
+            Task {
+                await coordinator.deleteRecord(record)
             }
         }
     }
@@ -151,51 +123,8 @@ struct HistoryView: View {
     }
     
     private func deleteRecord(_ record: VideoRecord) {
-        // 获取需要的信息
-        let objectID = record.objectID
-        let tempURL = record.tempAudioURL
-        
-        // 创建后台上下文
-        let backgroundContext = PersistenceController.shared.container.newBackgroundContext()
-        
-        // 在后台上下文中执行删除
-        backgroundContext.perform {
-            // 1. 获取后台上下文中的记录
-            guard let backgroundRecord = try? backgroundContext.existingObject(with: objectID) as? VideoRecord else {
-                return
-            }
-            
-            // 2. 删除临时文件
-            if let url = tempURL {
-                try? FileManager.default.removeItem(at: url)
-            }
-            
-            // 3. 删除记录
-            backgroundContext.delete(backgroundRecord)
-            
-            do {
-                // 4. 保存后台上下文
-                try backgroundContext.save()
-                
-                // 5. 在主线程更新 UI
-                Task { @MainActor in
-                    // 同步删除结果到主上下文
-                    NSManagedObjectContext.mergeChanges(
-                        fromRemoteContextSave: [NSDeletedObjectsKey: [objectID]],
-                        into: [viewContext]
-                    )
-                    
-                    // 更新 UI 状态
-                    if currentRecord?.objectID == objectID {
-                        currentRecord = nil
-                    }
-                    if selectedRecord?.objectID == objectID {
-                        selectedRecord = nil
-                    }
-                }
-            } catch {
-                print("删除失败: \(error.localizedDescription)")
-            }
+        Task {
+            await coordinator.deleteRecord(record)
         }
     }
     
@@ -214,7 +143,8 @@ struct HistoryView: View {
 
 struct RecordRow: View {
     let record: VideoRecord
-    @Binding var currentRecord: VideoRecord?
+    let onContinue: (VideoRecord) async throws -> Void
+    let onDelete: (VideoRecord) async -> Void
     @Binding var selectedTab: ContentView.Tab
     @Binding var selectedRecord: VideoRecord?
     
@@ -227,24 +157,35 @@ struct RecordRow: View {
             HStack {
                 Text(record.title ?? record.url)
                     .font(.headline)
-                    .onTapGesture(count: 2) { // 双击复制
-                        copyURL(record.url)
-                    }
-                    .onLongPressGesture { // 长按复制
-                        copyURL(record.url)
-                    }
+                    .onTapGesture(count: 2) { copyURL(record.url) }
+                    .onLongPressGesture { copyURL(record.url) }
                 
                 Spacer()
                 
-                // 只有未完成的记录显示继续处理按钮
-                if record.status != .completed {
-                    Button {
-                        continueProcessing(record)
-                    } label: {
-                        Text("继续处理")
-                            .foregroundColor(.blue)
+                HStack(spacing: 8) {
+                    if record.status != .completed {
+                        Button {
+                            Task {
+                                try await onContinue(record)
+                                selectedTab = .home
+                            }
+                        } label: {
+                            Text("继续处理")
+                                .foregroundColor(.blue)
+                        }
+                        .buttonStyle(.borderless)
                     }
-                    .buttonStyle(.borderless)
+                    
+                    // 删除按钮
+                    Button(role: .destructive) {
+                        Task {
+                            await onDelete(record)
+                        }
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundColor(.red)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             
@@ -295,11 +236,6 @@ struct RecordRow: View {
         )
     }
     
-    private func continueProcessing(_ record: VideoRecord) {
-        currentRecord = record  // 设置当前记录
-        selectedTab = .home     // 切换到主页
-    }
-    
     private func copyURL(_ url: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(url, forType: .string)
@@ -336,6 +272,6 @@ struct SearchField: View {
 }
 
 #Preview {
-    HistoryView(selectedTab: .constant(.history), currentRecord: .constant(nil))
+    HistoryView(selectedTab: .constant(.history))
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 } 

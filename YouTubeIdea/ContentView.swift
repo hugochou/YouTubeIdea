@@ -51,14 +51,11 @@ struct ContentView: View {
         } detail: {
             switch selectedTab {
             case .home:
-                HomeView(currentRecord: $currentRecord)
+                HomeView()
                     .frame(minWidth: 600)
                     .environment(\.managedObjectContext, viewContext)
             case .history:
-                HistoryView(
-                    selectedTab: $selectedTab,
-                    currentRecord: $currentRecord
-                )
+                HistoryView(selectedTab: $selectedTab)
                     .frame(minWidth: 600)
                     .environment(\.managedObjectContext, viewContext)
             case .profile:

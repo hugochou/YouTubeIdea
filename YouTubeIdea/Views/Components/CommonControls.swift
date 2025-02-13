@@ -6,7 +6,7 @@ enum CommonControls {
         let height: CGFloat
         let font: Font
         
-        init(height: CGFloat = 44, font: Font = .system(size: 16)) {
+        init(height: CGFloat = 44, font: Font = .system(size: 14)) {
             self.height = height
             self.font = font
         }

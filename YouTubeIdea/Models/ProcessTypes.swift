@@ -2,11 +2,11 @@ import Foundation
 import SwiftUI
 
 enum ProcessStatus: Int16 {
-    case pending = 1        // 等待下载
-    case downloaded = 2     // 等待转录
-    case transcribed = 3    // 等待翻译
-    case translated = 4     // 等待润色
-    case completed = 5      // 已完成
+    case pending = 0        // 等待下载
+    case downloaded = 1     // 等待转录
+    case transcribed = 2    // 等待翻译
+    case translated = 3     // 等待润色
+    case completed = 4      // 已完成
     
     // 静态状态描述
     var description: String {
@@ -15,7 +15,7 @@ enum ProcessStatus: Int16 {
         case .downloaded: return "等待转录"
         case .transcribed: return "等待翻译"
         case .translated: return "等待润色"
-        case .completed: return "已完成"
+        case .completed: return "处理完成"
         }
     }
     

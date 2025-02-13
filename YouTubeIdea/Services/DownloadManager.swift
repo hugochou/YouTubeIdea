@@ -168,18 +168,18 @@ class DownloadManager {
     }
     
     func downloadYouTubeAudio(from url: String, progressHandler: @escaping (Double) -> Void) async throws -> URL {
-        print("DownloadManager - 开始下载准备")
+//        print("DownloadManager - 开始下载准备")
         
         // 获取 yt-dlp 完整路径
         let ytDlpPath = try await checkYtDlp()
-        print("使用 yt-dlp 路径: \(ytDlpPath)")
+//        print("使用 yt-dlp 路径: \(ytDlpPath)")
         
         // 创建临时文件路径
         let tempDir = FileManager.default.temporaryDirectory
         let outputFileName = UUID().uuidString + ".mp3"
         let outputURL = tempDir.appendingPathComponent(outputFileName)
         
-        print("DownloadManager - 输出路径: \(outputURL.path)")
+//        print("DownloadManager - 输出路径: \(outputURL.path)")
         
         // 构建下载命令，使用完整路径，指定输出格式为 mp3
         let command = """
@@ -192,7 +192,7 @@ class DownloadManager {
         '\(url)'
         """
         
-        print("DownloadManager - 执行命令: \(command)")
+//        print("DownloadManager - 执行命令: \(command)")
         
         // 执行下载并返回结果
         return try await withCheckedThrowingContinuation { continuation in
@@ -217,7 +217,7 @@ class DownloadManager {
                     if let progress = self.parseProgress(from: output) {
                         progressHandler(progress)
                     }
-                    print("下载输出: \(output)")
+//                    print("下载输出: \(output)")
                 }
             }
             

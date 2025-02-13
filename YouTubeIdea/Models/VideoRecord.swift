@@ -63,40 +63,27 @@ public class VideoRecord: NSManagedObject, Identifiable {
         try? managedObjectContext?.save()
     }
     
+    @MainActor
     func startProcessing() {
-        dispatchPrecondition(condition: .onQueue(.main))
-        print("开始处理: \(status.description)")
         isProcessing = true
-        try? managedObjectContext?.save()
-    }
-    
-    func endProcessing() {
-        dispatchPrecondition(condition: .onQueue(.main))
-        isProcessing = false
-        try? managedObjectContext?.save()
-    }
-    
-    func updateStatus(_ newStatus: ProcessStatus) {
-        dispatchPrecondition(condition: .onQueue(.main))
-        let oldStatus = status
-        print("状态更新: \(oldStatus.description) -> \(newStatus.description)")
-        status = newStatus
         errorMessage = nil
-        try? managedObjectContext?.save()
     }
     
+    @MainActor
+    func updateStatus(_ newStatus: ProcessStatus) {
+        statusValue = Int16(newStatus.rawValue)
+    }
+    
+    @MainActor
     func completeProcessing() {
-        dispatchPrecondition(condition: .onQueue(.main))
-        print("完成当前步骤: \(status.description)")
         isProcessing = false
-        try? managedObjectContext?.save()
+        errorMessage = nil
     }
     
+    @MainActor
     func failProcessing(_ error: Error) {
-        dispatchPrecondition(condition: .onQueue(.main))
+        isProcessing = false
         errorMessage = error.localizedDescription
-        isProcessing = false  // 确保处理状态被重置
-        try? managedObjectContext?.save()
     }
     
     func clearError() {
@@ -178,16 +165,30 @@ public class VideoRecord: NSManagedObject, Identifiable {
         }
     }
     
-    // 修改更新转录文本的方法
+    @MainActor
     func updateTranscription(_ text: String) {
-        dispatchPrecondition(condition: .onQueue(.main))
         transcription = text
-        status = .transcribed
-        
-        // 转录成功后清理音频文件
-        cleanupAudioFile()
-        
-        try? managedObjectContext?.save()
+    }
+    
+    @MainActor
+    func updateTranslation(_ text: String) {
+        translation = text
+    }
+    
+    @MainActor
+    func updateRefinedText(_ text: String, tags: [String]) {
+        refinedText = text
+        self.tags = tags
+    }
+    
+    var statusDescription: String {
+        if isProcessing {
+            return "正在\(status.nextStep)"
+        } else if let error = errorMessage {
+            return "处理出错: \(error)"
+        } else {
+            return status.description
+        }
     }
 }
 
@@ -221,21 +222,6 @@ extension VideoRecord {
         return record
     }
     
-    func updateTranslation(_ text: String) {
-        dispatchPrecondition(condition: .onQueue(.main))
-        translation = text
-        status = .translated
-        try? managedObjectContext?.save()
-    }
-    
-    func updateRefinedText(_ text: String, tags: [String]) {
-        dispatchPrecondition(condition: .onQueue(.main))
-        refinedText = text
-        self.tags = tags
-        status = .completed
-        try? managedObjectContext?.save()
-    }
-    
     // 检查是否可以开始处理
     var canStartProcessing: Bool {
         if isProcessing { return false }
@@ -251,13 +237,26 @@ extension VideoRecord {
     
     // 检查是否需要翻译
     var needsTranslation: Bool {
-        // 只在转录完成后检查是否需要翻译
-        status == .transcribed && transcription.needsTranslation
+        transcription.needsTranslation
     }
     
     // 检查是否可以继续处理
     var canContinueProcessing: Bool {
-        !isProcessing && status != .completed && errorMessage == nil
+        if isProcessing { return false }
+        if let error = errorMessage { return false }
+        
+        switch status {
+        case .pending:
+            return true
+        case .downloaded:
+            return tempAudioURL != nil
+        case .transcribed:
+            return !transcription.isEmpty
+        case .translated:
+            return !translation.isEmpty
+        case .completed:
+            return false
+        }
     }
     
     // 检查是否可以重置
@@ -313,22 +312,6 @@ extension VideoRecord {
             return !translation.isEmpty || status > .transcribed
         case .translated:
             return !refinedText.isEmpty || status > .translated
-        default:
-            return false
-        }
-    }
-    
-    // 添加一个方法来检查是否可以进行特定状态的处理
-    func canProcess(for targetStatus: ProcessStatus) -> Bool {
-        guard !isProcessing && errorMessage == nil else { return false }
-        
-        switch targetStatus {
-        case .downloaded:
-            return status == .downloaded && tempAudioURL != nil
-        case .transcribed:
-            return status == .transcribed && !transcription.isEmpty
-        case .translated:
-            return status == .translated && !translation.isEmpty
         default:
             return false
         }

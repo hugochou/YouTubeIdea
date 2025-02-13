@@ -7,12 +7,6 @@ struct ProcessingSection: View {
     let content: String
     let targetStatus: ProcessStatus
     let loadingText: String
-    let canProcess: Bool
-    let process: () -> Void
-    
-    private var isCurrentProcessing: Bool {
-        record.isProcessing && record.status == targetStatus
-    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -20,7 +14,7 @@ struct ProcessingSection: View {
                 Text(title)
                     .font(.headline)
                 Spacer()
-                if isCurrentProcessing {
+                if record.isProcessing && record.status == targetStatus {
                     ProgressView()
                         .scaleEffect(0.7)
                         .controlSize(.small)
@@ -37,7 +31,7 @@ struct ProcessingSection: View {
                 .font(.body)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay {
-                    if isCurrentProcessing {
+                    if record.isProcessing && record.status == targetStatus {
                         VStack {
                             ProgressView()
                             Text(loadingText)

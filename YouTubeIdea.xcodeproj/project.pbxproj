@@ -25,14 +25,11 @@
 		83F624402D58B216007001D4 /* APIServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F6243D2D58B216007001D4 /* APIServiceTests.swift */; };
 		83F624412D58B216007001D4 /* TestConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F6243F2D58B216007001D4 /* TestConfig.swift */; };
 		83F624602D5B1770007001D4 /* ProcessTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F6245F2D5B1770007001D4 /* ProcessTypes.swift */; };
-		83F6246F2D5B21D8007001D4 /* RefinementSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F6246A2D5B21D8007001D4 /* RefinementSection.swift */; };
-		83F624702D5B21D8007001D4 /* TranscriptionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F6246B2D5B21D8007001D4 /* TranscriptionSection.swift */; };
-		83F624712D5B21D8007001D4 /* TranslationSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F6246C2D5B21D8007001D4 /* TranslationSection.swift */; };
 		83F624722D5B21D8007001D4 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F6246E2D5B21D8007001D4 /* HomeView.swift */; };
 		83F624742D5B321B007001D4 /* CommonControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F624732D5B321B007001D4 /* CommonControls.swift */; };
 		83F624762D5B48FD007001D4 /* ProcessingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F624752D5B48FD007001D4 /* ProcessingSection.swift */; };
-		83F624782D5B4D7B007001D4 /* ProcessingProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F624772D5B4D7B007001D4 /* ProcessingProtocol.swift */; };
 		83F6247A2D5C77C9007001D4 /* HistoryDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F624792D5C77C9007001D4 /* HistoryDetailView.swift */; };
+		83F6247D2D5DA782007001D4 /* ProcessingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83F6247B2D5DA782007001D4 /* ProcessingCoordinator.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -67,14 +64,11 @@
 		83F6243D2D58B216007001D4 /* APIServiceTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = APIServiceTests.swift; sourceTree = "<group>"; };
 		83F6243F2D58B216007001D4 /* TestConfig.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TestConfig.swift; sourceTree = "<group>"; };
 		83F6245F2D5B1770007001D4 /* ProcessTypes.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProcessTypes.swift; sourceTree = "<group>"; };
-		83F6246A2D5B21D8007001D4 /* RefinementSection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RefinementSection.swift; sourceTree = "<group>"; };
-		83F6246B2D5B21D8007001D4 /* TranscriptionSection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TranscriptionSection.swift; sourceTree = "<group>"; };
-		83F6246C2D5B21D8007001D4 /* TranslationSection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TranslationSection.swift; sourceTree = "<group>"; };
 		83F6246E2D5B21D8007001D4 /* HomeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		83F624732D5B321B007001D4 /* CommonControls.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CommonControls.swift; sourceTree = "<group>"; };
 		83F624752D5B48FD007001D4 /* ProcessingSection.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProcessingSection.swift; sourceTree = "<group>"; };
-		83F624772D5B4D7B007001D4 /* ProcessingProtocol.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProcessingProtocol.swift; sourceTree = "<group>"; };
 		83F624792D5C77C9007001D4 /* HistoryDetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HistoryDetailView.swift; sourceTree = "<group>"; };
+		83F6247B2D5DA782007001D4 /* ProcessingCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ProcessingCoordinator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -116,6 +110,7 @@
 		83F623FC2D577B77007001D4 /* YouTubeIdea */ = {
 			isa = PBXGroup;
 			children = (
+				83F6247C2D5DA782007001D4 /* Coordinators */,
 				83F624232D579B39007001D4 /* Extensions */,
 				83F6241E2D5799E8007001D4 /* Views */,
 				83F624122D577DBE007001D4 /* Models */,
@@ -200,14 +195,18 @@
 		83F6246D2D5B21D8007001D4 /* Components */ = {
 			isa = PBXGroup;
 			children = (
-				83F624772D5B4D7B007001D4 /* ProcessingProtocol.swift */,
 				83F624752D5B48FD007001D4 /* ProcessingSection.swift */,
 				83F624732D5B321B007001D4 /* CommonControls.swift */,
-				83F6246A2D5B21D8007001D4 /* RefinementSection.swift */,
-				83F6246B2D5B21D8007001D4 /* TranscriptionSection.swift */,
-				83F6246C2D5B21D8007001D4 /* TranslationSection.swift */,
 			);
 			path = Components;
+			sourceTree = "<group>";
+		};
+		83F6247C2D5DA782007001D4 /* Coordinators */ = {
+			isa = PBXGroup;
+			children = (
+				83F6247B2D5DA782007001D4 /* ProcessingCoordinator.swift */,
+			);
+			path = Coordinators;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -313,21 +312,18 @@
 				83F624242D579B39007001D4 /* StringExtensions.swift in Sources */,
 				83F6240A2D577B78007001D4 /* YouTubeIdea.xcdatamodeld in Sources */,
 				83F624072D577B78007001D4 /* Persistence.swift in Sources */,
+				83F6247D2D5DA782007001D4 /* ProcessingCoordinator.swift in Sources */,
 				83F624002D577B77007001D4 /* ContentView.swift in Sources */,
 				83F624602D5B1770007001D4 /* ProcessTypes.swift in Sources */,
 				83F624152D577DBE007001D4 /* VideoRecord.swift in Sources */,
-				83F624782D5B4D7B007001D4 /* ProcessingProtocol.swift in Sources */,
 				83F6247A2D5C77C9007001D4 /* HistoryDetailView.swift in Sources */,
 				83F624262D579B4C007001D4 /* SharedViews.swift in Sources */,
-				83F624712D5B21D8007001D4 /* TranslationSection.swift in Sources */,
 				83F624722D5B21D8007001D4 /* HomeView.swift in Sources */,
 				83F6241A2D57997C007001D4 /* SettingsManager.swift in Sources */,
 				83F624742D5B321B007001D4 /* CommonControls.swift in Sources */,
 				83F624162D577DBE007001D4 /* APIService.swift in Sources */,
-				83F624702D5B21D8007001D4 /* TranscriptionSection.swift in Sources */,
 				83F623FE2D577B77007001D4 /* YouTubeIdeaApp.swift in Sources */,
 				83F624762D5B48FD007001D4 /* ProcessingSection.swift in Sources */,
-				83F6246F2D5B21D8007001D4 /* RefinementSection.swift in Sources */,
 				83F6241F2D5799E8007001D4 /* HistoryView.swift in Sources */,
 				83F624212D5799E8007001D4 /* ProfileView.swift in Sources */,
 				83F624182D578058007001D4 /* DownloadManager.swift in Sources */,
